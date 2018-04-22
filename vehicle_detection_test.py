@@ -28,16 +28,18 @@ hist_feat = True # Histogram features on or off
 hog_feat = True # HOG features on or off
 y_start_stop = [None, None] # Min and max in y to search in slide_window()
 
-
 def pipeline_window_test(image):
 	return pipeline_window(image,svc,X_scaler)
 
-video_file = 'project_video.mp4'
-clip1 = VideoFileClip(video_file).get_frame(10)
-window_img = pipeline_window_test(clip1)
-cv2.imwrite('project_video10.jpg', window_img)
+def pipeline_label_test(image):
+	return pipeline_label(image,svc,X_scaler)
 
-subclip = VideoFileClip(video_file).subclip(22,23)
-white_clip = subclip.fl_image(pipeline_window_test)
+video_file = 'project_video.mp4'
+# clip1 = VideoFileClip(video_file).get_frame(10)
+# window_img = pipeline_window_test(clip1)
+# cv2.imwrite('output/project_video.jpg', window_img)
+
+subclip = VideoFileClip(video_file).subclip(10,11)
+white_clip = subclip.fl_image(pipeline_label_test)
 white_clip.write_videofile('output/'+video_file.split('/')[-1], audio=False)
 
