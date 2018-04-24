@@ -1,7 +1,6 @@
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 import glob
 import time
 from sklearn.svm import LinearSVC, SVC
@@ -10,13 +9,13 @@ from skimage.feature import hog
 from lesson_functions import *
 # NOTE: the next import is only valid for scikit-learn version <= 0.17
 # for scikit-learn >= 0.18 use:
-# from sklearn.model_selection import train_test_split
-from sklearn.cross_validation import train_test_split
-import pickle
+from sklearn.model_selection import train_test_split
+# from sklearn.cross_validation import train_test_split
+from sklearn.externals import joblib
 
 # Read in cars and notcars
-cars = glob.glob('vehicles/*/*.png')
-notcars = glob.glob('non-vehicles/*/*.png')
+cars = glob.glob('../CarND-Vehicle-Detection/vehicles/*/*.png')
+notcars = glob.glob('../CarND-Vehicle-Detection/non-vehicles/*/*.png')
 
 # Reduce the sample size because
 # The quiz evaluator times out after 13s of CPU time
@@ -24,13 +23,12 @@ notcars = glob.glob('non-vehicles/*/*.png')
 # cars = cars[0:sample_size]
 # notcars = notcars[0:sample_size]
 
-### TODO: Tweak these parameters and see how the results change.
-color_space = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 9  # HOG orientations
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 8  # HOG orientations
 pix_per_cell = 8 # HOG pixels per cell
-cell_per_block = 2 # HOG cells per block
+cell_per_block = 1 # HOG cells per block
 hog_channel = 0 # Can be 0, 1, 2, or "ALL"
-spatial_size = (16, 16) # Spatial binning dimensions
+spatial_size = (8, 8) # Spatial binning dimensions
 hist_bins = 16    # Number of histogram bins
 spatial_feat = True # Spatial features on or off
 hist_feat = True # Histogram features on or off
@@ -59,7 +57,7 @@ y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
 # Split up data into randomized training and test sets
 rand_state = np.random.randint(0, 100)
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=rand_state)
+    X, y, test_size=0.2, random_state=1)
     
 # Fit a per-column scaler
 X_scaler = StandardScaler().fit(X_train)
@@ -82,28 +80,6 @@ print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 # Check the prediction time for a single sample
 t=time.time()
 
-pickle.dump(svc,open('svc.pickle', 'wb'))
-pickle.dump(X_scaler,open('X_scaler.pickle', 'wb'))
-
-# image = mpimg.imread('vehicles-image0000.png')
-# draw_image = np.copy(image)
-
-# Uncomment the following line if you extracted training
-# data from .png images (scaled 0 to 1 by mpimg) and the
-# image you are searching is a .jpg (scaled 0 to 255)
-# image = image.astype(np.float32)/255
-# windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-#                     xy_window=(96, 96), xy_overlap=(0.5, 0.5))
-
-# hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
-#                         spatial_size=spatial_size, hist_bins=hist_bins, 
-#                         orient=orient, pix_per_cell=pix_per_cell, 
-#                         cell_per_block=cell_per_block, 
-#                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
-#                         hist_feat=hist_feat, hog_feat=hog_feat)                       
-
-# window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
-
-# plt.imshow(window_img)
-
+joblib.dump(svc,open('svc.pkl', 'wb'))
+joblib.dump(X_scaler,open('X_scaler.pkl', 'wb'))
 

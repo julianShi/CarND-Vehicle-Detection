@@ -38,34 +38,44 @@ Here is an example using the `R` color channel and HOG parameters of `orientatio
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-The following HOG parameters are chosen: 
-8, 'orientations', 
-8, 'pixels per cell and', 
-1, 'cells per block'
+The following HOG parameters are chosen for the vehicle classifier. 
 
-According to the series of testing in the following, the classification accuracy has been larger than 99.5%. There is not much space to improve. But using  `cells_per_block=(1,1)` greatly reduced the feature length and the time cost in training. 
+```python
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 8  # HOG orientations
+pix_per_cell = 8 # HOG pixels per cell
+cell_per_block = 1 # HOG cells per block
+hog_channel = 0 # Can be 0, 1, 2, or "ALL"
+spatial_size = (8, 8) # Spatial binning dimensions
+hist_bins = 16    # Number of histogram bins
+spatial_feat = True # Spatial features on or off
+hist_feat = True # Histogram features on or off
+hog_feat = True # HOG features on or off
 
-('Using:', 8, 'orientations', 8, 'pixels per cell and', 2, 'cells per block')
-('Feature vector length:', 2384)
-(0.34, 'Seconds to train SVC...')
-('Test Accuracy of SVC = ', 0.995)
+```
 
-('Using:', 16, 'orientations', 8, 'pixels per cell and', 2, 'cells per block')
-('Feature vector length:', 3952)
-(0.59, 'Seconds to train SVC...')
-('Test Accuracy of SVC = ', 0.995)
+Because, according to the series of testing in the following, the classification accuracy has been larger than 99.5%. There is not much space to improve. But the choice of 8 pixels per cell and 1 cell per block greatly reduced the feature length and the time cost in training. 
 
-('Using:', 8, 'orientations', 4, 'pixels per cell and', 2, 'cells per block')
-('Feature vector length:', 8016)
-(1.62, 'Seconds to train SVC...')
-('Test Accuracy of SVC = ', 0.995)
+| Color space | Orient | Pixel /cell | Cell  /block | spat feat | hist feat | hog feat | Feat length | Seconds to train | Accu racy |
+| ----------- | ------ | ----------- | ------------ | --------- | --------- | -------- | ----------- | ---------------- | --------- |
+| YCrCb       | 8      | 8           | 1            | True      | True      | True     | 728         | 0.19             | 0.995     |
+| RGB         |        |             |              |           |           |          | 728         | 0.21             | 0.965     |
+|             | 16     |             |              |           |           |          | 1240        | 0.28             | 0.98      |
+|             |        | 4           |              |           |           |          | 2264        | **0.93**         | 0.955     |
+|             |        |             | 2            |           |           |          | 1784        | 0.29             | 0.995     |
+|             |        |             |              | False     |           |          | 536         | 0.22             | **0.795** |
+|             |        |             |              |           | False     |          | 704         | 0.17             | 0.995     |
+|             |        |             |              |           |           | False    | 216         | 0.06             | 0.975     |
+
+- 400 vehicles and 400 non-vehicles images were used for training. 100 vehicles and 100 non-vehicles images were used for tesing. 
+- A side observation from the comparison of different raws at the above table was that the number of spatial feature is critial to the training. 
+
+Finally, it takes 
 
 ('Using:', 8, 'orientations', 8, 'pixels per cell and', 1, 'cells per block')
-('Feature vector length:', 1328)
-(0.29, 'Seconds to train SVC...')
-('Test Accuracy of SVC = ', 1.0)
-
-
+('Feature vector length:', 752)
+(40.46, 'Seconds to train SVC...')
+('Test Accuracy of SVC = ', 0.9721)
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
@@ -83,19 +93,24 @@ in `traning.py` to balance the scale of different types of features.
 
 I chose the lower section of the image as the search region of interests. 
 
-I used and 96-by-96 and 192-by-192  two scales of resolutions. The overlapse are 75%. Which are demonstrated below. 
+I used and 64-by-64, 96-by-96 and 128-by-128  three scales of resolutions. The overlapse are 75%. Which are demonstrated below. 
 
-![](examples/test1_draw_boxes.jpg)
+![](examples/test1_draw_boxes_64.jpg)
 
-![](examples/test1_draw_boxes_192.jpg)
+![](examples/test1_draw_boxes_96.jpg)
+
+![](examples/test1_draw_boxes_128.jpg)
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+Ultimately I searched on three scales include 64-by-64, 96-by-96 and 128-by-128 at the lower region of the camera scene. Here are four frames, their corresponding heatmaps and the detected vehicles (heat threshold is 5):
 
-| ![](examples/project_video_32.jpg) | ![](examples/project_video_34.jpg) |
-| ---------------------------------- | ---------------------------------- |
-| ![](examples/project_video_36.jpg) | ![](examples/project_video_38.jpg) |
+| Detected windows                          | Heat map                                | Threshold = 5                            |
+| ----------------------------------------- | --------------------------------------- | ---------------------------------------- |
+| ![](examples/project_video_window_20.jpg) | ![](examples/project_video_heat_20.jpg) | ![](examples/project_video_label_20.jpg) |
+| ![](examples/project_video_window_25.jpg) | ![](examples/project_video_heat_25.jpg) | ![](examples/project_video_label_25.jpg) |
+| ![](examples/project_video_window_30.jpg) | ![](examples/project_video_heat_30.jpg) | ![](examples/project_video_label_30.jpg) |
+| ![](examples/project_video_window_35.jpg) | ![](examples/project_video_heat_35.jpg) | ![](examples/project_video_label_35.jpg) |
 
 
 
@@ -110,19 +125,6 @@ Here's a [link to my video result](./output/project_video.mp4)
 I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 
 Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-Here are four frames and their corresponding heatmaps:
-
-| ![](examples/project_video_32.jpg) | ![](examples/project_video_heat_32.jpg) |
-| ---------------------------------- | --------------------------------------- |
-| ![](examples/project_video_34.jpg) | ![](examples/project_video_heat_34.jpg) |
-| ![](examples/project_video_36.jpg) | ![](examples/project_video_heat_36.jpg) |
-| ![](examples/project_video_38.jpg) | ![](examples/project_video_heat_38.jpg) |
-
-
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![](examples/project_video_label_38.jpg)
 
 
 
